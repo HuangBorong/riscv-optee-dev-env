@@ -4,3 +4,6 @@
 [submodule "opensbi"]
 	path = opensbi
 	url = git@github.com:HuangBorong/opensbi.git
+[submodule "optee_os"]
+	path = optee_os
+	url = git@github.com:HuangBorong/optee_os.git

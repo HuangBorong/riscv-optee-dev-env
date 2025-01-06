@@ -23,8 +23,18 @@ opensbi_srcdir := $(CURRENT_DIR)/opensbi
 opensbi_builddir := $(BUILD_DIR)/opensbi
 opensbi_config := $(CONFIG_DIR)/opensbi/qemu_virt_optee_defconfig
 opensbi_bindir := $(opensbi_builddir)/platform/generic/firmware
-opensbi_payload := $(opensbi_bindir)/fw_payload.bin
-opensbi_payload_debug := $(opensbi_bindir)/fw_payload.elf
+opensbi_payload_bin := $(opensbi_bindir)/fw_payload.bin
+opensbi_payload_elf := $(opensbi_bindir)/fw_payload.elf
+opensbi_jump_bin := $(opensbi_bindir)/fw_jump.bin
+opensbi_jump_elf := $(opensbi_bindir)/fw_jump.elf
+
+# OP-TEE Variables
+optee_os_srcdir := $(CURRENT_DIR)/optee_os
+optee_os_builddir := $(BUILD_DIR)/optee_os
+optee_os_bin := $(optee_os_builddir)/core/tee.bin
+optee_os_elf := $(optee_os_builddir)/core/tee.elf
+optee_os_tddram_start := 0x8e000000
+optee_os_tddram_size := 0x00f00000
 
 # DTS Variables
 dts_file := $(CONFIG_DIR)/qemu_virt_optee.dts
@@ -54,8 +64,19 @@ opensbi:
 	PLATFORM=generic \
 	PLATFORM_DEFCONFIG=qemu_virt_optee_defconfig \
 	FW_TEXT_START=0x80000000 \
+	FW_JUMP_ADDR=$(optee_os_tddram_start) \
 	-j $(NPROC) && \
 	rm $(opensbi_srcdir)/platform/generic/configs/qemu_virt_optee_defconfig
+
+###########
+# OT-TEE
+###########
+.PHONY: optee_os
+optee_os:
+	mkdir -p $(optee_os_builddir)
+	$(MAKE) -C $(optee_os_srcdir) O=$(optee_os_builddir) \
+	ARCH=riscv PLATFORM=virt \
+	-j $(NPROC)
 
 ###########
 # DTS
@@ -75,8 +96,10 @@ dtb:
 .PHONY: run
 run:
 	$(qemu_target) $(qemu_machine) $(qemu_args) \
-	-bios $(opensbi_payload) \
-	-device loader,file=$(opensbi_payload),addr=0x80000000 \
+	-bios $(opensbi_jump_bin) \
+	-kernel $(optee_os_bin) \
+	-device loader,file=$(opensbi_jump_bin),addr=0x80000000 \
+	-device loader,file=$(optee_os_bin),addr=$(optee_os_tddram_start) \
 	-dtb $(dtb_file) \
 	-nographic
 
@@ -85,9 +108,11 @@ run:
 ##########
 .PHONY: debug
 debug:
-	$(qemu_target) $(qemu_machine) \
-	-bios $(opensbi_payload) \
-	-device loader,file=$(opensbi_payload_debug),addr=0x80000000 \
+	$(qemu_target) $(qemu_machine) $(qemu_args) \
+	-bios $(opensbi_jump_bin) \
+	-kernel $(optee_os_bin) \
+	-device loader,file=$(opensbi_jump_elf),addr=0x80000000 \
+	-device loader,file=$(optee_os_elf),addr=$(optee_os_tddram_start) \
 	-dtb $(dtb_file) \
 	-nographic \
 	-s -S
@@ -95,7 +120,7 @@ debug:
 ##########
 # clean
 ##########
-.PHONY: qemu-clean qemu-distclean opensbi-clean dts-clean
+.PHONY: qemu-clean qemu-distclean opensbi-clean dts-clean optee_os-clean
 qemu-clean:
 	$(MAKE) -C $(qemu_builddir) clean
 
@@ -107,3 +132,6 @@ opensbi-clean:
 
 dts-clean:
 	rm -f $(dts_file) $(dtb_file)
+
+optee_os-clean:
+	rm -rf $(optee_os_builddir)
