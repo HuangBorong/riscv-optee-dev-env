@@ -37,6 +37,25 @@ dts_file := $(CONFIG_DIR)/qemu_virt_optee.dts
 dtb_file := $(BUILD_DIR)/qemu_virt_optee.dtb
 
 ###########
+# help
+###########
+.PHONY: all help
+all: help
+
+help:
+	@echo "Here is a list of make targets supported"
+	@echo ""
+	@echo "- qemu : build qemu"
+	@echo "- qemu-clean : remove qemu build"
+	@echo "- opensbi : build opensbi"
+	@echo "- opensbi-clean : clean opensbi build"
+	@echo "- optee_os : build optee_os"
+	@echo "- optee_os-clean : clean optee_os build"
+	@echo "- dts : dump DTS file from Qemu"
+	@echo "- dtb : dump DTB file from Qemu"
+	@echo "- dts-clean : remove DTS and DTB file"
+
+###########
 # qemu
 ###########
 .PHONY: qemu
