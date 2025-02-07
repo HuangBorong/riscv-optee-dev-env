@@ -10,13 +10,9 @@ qemu_srcdir := $(CURRENT_DIR)/qemu
 qemu_builddir := $(BUILD_DIR)/qemu/build
 qemu_target := $(qemu_builddir)/qemu-system-riscv64
 qemu_config_args := --target-list=riscv64-softmmu
-qemu_machine := -machine virt,aia=aplic
+qemu_machine := -machine virt,aia=aplic-imsic
 qemu_args := -m 4G \
-			 -object memory-backend-ram,size=2G,id=m0 \
-    		 -object memory-backend-ram,size=2G,id=m1 \
-    		 -numa node,nodeid=0,memdev=m0 \
-    		 -numa node,nodeid=1,memdev=m1 \
-    		 -smp 8,cores=4,sockets=2
+    		 -smp 4
 
 # OpenSBI Variables
 opensbi_srcdir := $(CURRENT_DIR)/opensbi
@@ -76,6 +72,7 @@ optee_os:
 	mkdir -p $(optee_os_builddir)
 	$(MAKE) -C $(optee_os_srcdir) O=$(optee_os_builddir) \
 	ARCH=riscv PLATFORM=virt \
+	CFG_TEE_CORE_NB_CORE=4 CFG_NUM_THREADS=4 \
 	-j $(NPROC)
 
 ###########
@@ -96,6 +93,7 @@ dtb:
 .PHONY: run
 run:
 	$(qemu_target) $(qemu_machine) $(qemu_args) \
+	-d guest_errors -D guest_log.txt \
 	-bios $(opensbi_jump_bin) \
 	-kernel $(optee_os_bin) \
 	-device loader,file=$(opensbi_jump_bin),addr=0x80000000 \
