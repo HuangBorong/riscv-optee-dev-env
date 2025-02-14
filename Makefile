@@ -10,7 +10,7 @@ qemu_srcdir := $(CURRENT_DIR)/qemu
 qemu_builddir := $(BUILD_DIR)/qemu/build
 qemu_target := $(qemu_builddir)/qemu-system-riscv64
 qemu_config_args := --target-list=riscv64-softmmu
-qemu_machine := -machine virt,aia=aplic-imsic
+qemu_machine := -machine virt,aia=aplic
 qemu_args := -m 4G \
     		 -smp 4
 
